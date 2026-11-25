@@ -4,39 +4,35 @@
 
 <h1 align="center">MagicQuit</h1>
 
-<p align="center">Automatically quits apps you are no longer using.<br>Lives in the menu bar, stays out of your way.</p>
+<p align="center">Automatically quits or restarts idle apps from the macOS menu bar.</p>
 
 ---
 
-MagicQuit keeps your Mac tidy without you noticing it. Two mechanisms, both optional per app:
+This fork of [MagicQuit](https://github.com/BigBerny/magicquit) keeps the native menu bar interface and adds:
 
-- **Idle quit** — apps you haven't used for a while (default: 8 hours) are quit automatically. One setting, fixed steps from 15 minutes to 48 hours.
-- **Quit on last window close** — when you close an app's last window, the app quits, like on Windows. Close the last Preview window, Preview is gone.
-
-Everything is exclude-based: both features apply to all regular apps, and you maintain a short list of exceptions. Media players (Music, Spotify, Podcasts, VLC) are excluded from window-close quitting by default so your audio keeps playing.
+- **Per-app actions.** Select **Off**, **Quit**, or **Restart** next to each app. **Restart** requests a normal quit and reopens the app in the background after the original process exits. If the app is still open after 20 seconds, MagicQuit skips the relaunch. Window and document restoration depend on the app.
+- **Two idle modes.** **Per App** is the default and tracks each app separately. **Whole Mac** uses one countdown based on keyboard and pointing-device inactivity. Time spent asleep does not count. The timeout ranges from 15 minutes to 48 hours, including a 3-hour option. The default is 8 hours.
+- **Simplified Chinese.** The menu, settings, and countdowns follow the macOS app language. English is also available.
 
 ## Install
 
-Download the latest release from the [Releases page](https://github.com/BigBerny/magicquit/releases), unzip, and drag `MagicQuit.app` into `/Applications`.
+Download the universal ZIP from this fork’s [Releases page](https://github.com/Sijiahui/magicquit/releases), unzip it, and drag `MagicQuit.app` into `/Applications`. It requires macOS 14 or later and supports Apple silicon and Intel Macs.
 
-<!-- Once the cask is published:
-```
-brew install --cask magicquit
-```
--->
-
-Requires macOS 14 or later.
+Fork builds are ad hoc signed and are not notarized by Apple. macOS may block the first launch. Download future fork versions from Releases.
 
 ## Usage
 
-- Click the menu bar icon to see all running apps with their remaining time.
-- The checkbox next to each app enables/disables idle quitting for it — unchecked apps are never touched.
-- The ↩ button resets an app's timer.
-- Settings: idle duration, launch at login, quit-on-last-window-close with its exclusion list.
+- Click the menu bar icon to see running apps and choose an action for each. The reset button resets that app’s timer in **Per App** mode.
+- Choose the idle mode, timeout, and login behavior in **Settings**.
+- **Quit on last window close** is a separate setting. It requests a normal quit when an app’s last window closes. Apps set to **Off** and apps on the window-quitting exclusion list stay open.
+
+### 简体中文
+
+点击菜单栏图标，为每个应用选择「不处理」「退出」或「重启」。在「设置 → 通用」中可选择按应用或按整机计时，并将空闲时长设为 3 小时。重启前会等待原进程正常退出。应用若卡在保存提示，超过 20 秒就跳过后台重开。
 
 ### Accessibility permission
 
-The window-close feature uses the Accessibility API to count an app's windows (it is the only reliable way to also see minimized windows). macOS will ask you to grant access in **System Settings → Privacy & Security → Accessibility** the first time you enable the feature. The idle-quit feature needs no permissions.
+The window-close feature uses the Accessibility API to count an app's windows, including minimized windows. Grant access in **System Settings → Privacy & Security → Accessibility** if you enable it. Idle actions require no Accessibility permission.
 
 ## How it quits apps
 
@@ -48,4 +44,4 @@ Open `MagicQuit.xcodeproj` in Xcode 16 or later and build the `MagicQuit` scheme
 
 ## License
 
-[MIT](LICENSE)
+[License](LICENSE)

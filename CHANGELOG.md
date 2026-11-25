@@ -1,3 +1,10 @@
+## v2.0.1-fork.1
+
+- Added **Off**, **Quit**, and **Restart** actions per app. Restart waits for the original process to exit before reopening the app in the background.
+- Added whole-Mac idle detection and a 3-hour timeout option. Per-app idle detection remains the default.
+- Added a Simplified Chinese interface that follows the macOS app language.
+- Fork releases use manual downloads from this repository.
+
 ## Version 2.0.1 - 2026-07-21
 
 ### Bug Fixes
