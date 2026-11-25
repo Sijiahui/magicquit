@@ -7,11 +7,21 @@ struct MagicQuitApp: App {
     @StateObject private var manager: RunningAppsManager
 
     init() {
-        let settings = AppSettings()
+        let testing = Self.isRunningTests
+        let settings = AppSettings(defaults: testing ? Self.testDefaults : .standard)
         _settings = StateObject(wrappedValue: settings)
-        _manager = StateObject(wrappedValue: RunningAppsManager(settings: settings))
-        _ = UpdaterSupport.controller
+        _manager = StateObject(wrappedValue: RunningAppsManager(settings: settings, startMonitoring: !testing))
+        if !testing { _ = UpdaterSupport.controller }
     }
+
+    static var isRunningTests: Bool {
+        let environment = ProcessInfo.processInfo.environment
+        return environment["XCTestConfigurationFilePath"] != nil ||
+            environment["XCTestBundlePath"] != nil ||
+            NSClassFromString("XCTestCase") != nil
+    }
+
+    private static let testDefaults = UserDefaults(suiteName: "MagicQuitTests.Host.\(UUID().uuidString)")!
 
     var body: some Scene {
         MenuBarExtra {

@@ -65,8 +65,25 @@ struct SettingsView: View {
 
                 SettingRow(
                     icon: "clock",
-                    title: "Quit inactive apps",
-                    detail: "Quit apps after they have not been used for this long."
+                    title: "Idle mode",
+                    detail: "Measure inactivity for each app or across the whole Mac."
+                ) {
+                    Picker("Idle mode", selection: $settings.idleMode) {
+                        ForEach(IdleMode.allCases, id: \.self) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .frame(width: 112)
+                }
+
+                SettingsDivider()
+
+                SettingRow(
+                    icon: "timer",
+                    title: "Idle duration",
+                    detail: "Run each app’s selected action after this much idle time."
                 ) {
                     Picker("Idle duration", selection: $settings.idleMinutes) {
                         ForEach(IdleDuration.stepsInMinutes, id: \.self) { minutes in
@@ -231,8 +248,8 @@ private enum SettingsPage: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .general: "General"
-        case .windows: "Window Quitting"
+        case .general: String(localized: "General")
+        case .windows: String(localized: "Window Quitting")
         }
     }
 
@@ -306,8 +323,8 @@ private struct SettingsSidebar: View {
 }
 
 private struct SettingsHeader: View {
-    let title: String
-    let subtitle: String
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
@@ -342,8 +359,8 @@ private struct SettingsCard<Content: View>: View {
 
 private struct SettingRow<Control: View>: View {
     let icon: String
-    let title: String
-    let detail: String
+    let title: LocalizedStringKey
+    let detail: LocalizedStringKey
     @ViewBuilder let control: Control
 
     var body: some View {
@@ -382,8 +399,8 @@ private struct SettingsDivider: View {
 
 private struct InfoCard: View {
     let icon: String
-    let title: String
-    let detail: String
+    let title: LocalizedStringKey
+    let detail: LocalizedStringKey
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {

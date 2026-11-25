@@ -15,6 +15,21 @@ struct MenuView: View {
     var body: some View {
         VStack(spacing: 0) {
             TimelineView(.periodic(from: .now, by: 1)) { context in
+                if settings.idleMode == .wholeMac {
+                    HStack {
+                        Text("Whole Mac Idle")
+                        Spacer()
+                        Text(wholeMacStatus(at: context.date))
+                            .monospacedDigit()
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, 4)
+                    .onChange(of: context.date, initial: true) { _, date in
+                        manager.refreshWholeMacCountdown(now: date)
+                    }
+                }
+
                 let rows = VStack(spacing: 2) {
                     ForEach(sortedApps) { entry in
                         AppRowView(entry: entry, now: context.date)
@@ -51,12 +66,18 @@ struct MenuView: View {
             }
             .padding(.bottom, 6)
         }
-        .frame(width: 320)
+        .frame(width: 350)
+    }
+    private func wholeMacStatus(at now: Date) -> String {
+        if manager.idlePaused { return String(localized: "Paused") }
+        guard let due = manager.wholeMacDueAt else { return String(localized: "Idle time unavailable") }
+        let seconds = Int(ceil(due.timeIntervalSince(now)))
+        return seconds > 0 ? IdleDuration.shortRemaining(seconds: seconds) : String(localized: "Threshold reached")
     }
 }
 
 struct MenuActionButton: View {
-    let title: String
+    let title: LocalizedStringKey
     let action: () -> Void
     @State private var isHovered = false
 

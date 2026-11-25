@@ -1,10 +1,30 @@
 import AppKit
 import Combine
 
+enum IdleMode: String, CaseIterable {
+    case perApp
+    case wholeMac
+
+    var title: String {
+        switch self {
+        case .perApp: String(localized: "Per App")
+        case .wholeMac: String(localized: "Whole Mac")
+        }
+    }
+}
+
+enum IdleAction: String, CaseIterable {
+    case off = "Off"
+    case quit = "Quit"
+    case restart = "Restart"
+}
+
 /// Single source of truth for user settings, persisted to UserDefaults.
 @MainActor
 final class AppSettings: ObservableObject {
     private enum Keys {
+        static let idleMode = "idleMode"
+        static let idleRestart = "idleRestartApps"
         static let idleMinutes = "idleMinutes"
         static let showQuitButton = "showCloseButton" // key kept from 1.x
         static let quitOnLastWindowClosed = "quitOnLastWindowClosed"
@@ -23,6 +43,10 @@ final class AppSettings: ObservableObject {
 
     private let defaults: UserDefaults
 
+    @Published var idleMode: IdleMode {
+        didSet { defaults.set(idleMode.rawValue, forKey: Keys.idleMode) }
+    }
+
     @Published var idleMinutes: Int {
         didSet { defaults.set(idleMinutes, forKey: Keys.idleMinutes) }
     }
@@ -35,9 +59,33 @@ final class AppSettings: ObservableObject {
         didSet { defaults.set(quitOnLastWindowClosed, forKey: Keys.quitOnLastWindowClosed) }
     }
 
-    /// Bundle identifiers excluded from idle quitting (menu checkboxes).
-    @Published var idleQuitExcluded: Set<String> {
+    /// Bundle identifiers excluded from idle quitting (menu action picker).
+    @Published private(set) var idleQuitExcluded: Set<String> {
         didSet { defaults.set(Array(idleQuitExcluded).sorted(), forKey: Keys.idleQuitExcluded) }
+    }
+
+    @Published private(set) var idleRestartApps: Set<String> {
+        didSet { defaults.set(Array(idleRestartApps).sorted(), forKey: Keys.idleRestart) }
+    }
+
+    func idleAction(for key: String) -> IdleAction {
+        if idleQuitExcluded.contains(key) { return .off }
+        return idleRestartApps.contains(key) ? .restart : .quit
+    }
+
+    func setIdleAction(_ action: IdleAction, for key: String) {
+        guard idleAction(for: key) != action else { return }
+        switch action {
+        case .off:
+            if idleRestartApps.contains(key) { idleRestartApps.remove(key) }
+            idleQuitExcluded.insert(key)
+        case .quit:
+            if idleRestartApps.contains(key) { idleRestartApps.remove(key) }
+            if idleQuitExcluded.contains(key) { idleQuitExcluded.remove(key) }
+        case .restart:
+            if idleQuitExcluded.contains(key) { idleQuitExcluded.remove(key) }
+            idleRestartApps.insert(key)
+        }
     }
 
     /// Bundle identifiers excluded from quit-on-last-window-closed.
@@ -59,9 +107,18 @@ final class AppSettings: ObservableObject {
             idleMinutes = IdleDuration.defaultMinutes
         }
 
+        idleMode = defaults.string(forKey: Keys.idleMode).flatMap(IdleMode.init(rawValue:)) ?? .perApp
         showQuitButton = defaults.bool(forKey: Keys.showQuitButton)
         quitOnLastWindowClosed = defaults.bool(forKey: Keys.quitOnLastWindowClosed)
-        idleQuitExcluded = Set(defaults.stringArray(forKey: Keys.idleQuitExcluded) ?? [])
+        let excluded = Set(defaults.stringArray(forKey: Keys.idleQuitExcluded) ?? [])
+        idleQuitExcluded = excluded
+
+        let storedRestart = Set(defaults.stringArray(forKey: Keys.idleRestart) ?? [])
+        let restart = storedRestart.subtracting(excluded)
+        idleRestartApps = restart
+        if storedRestart != restart {
+            defaults.set(Array(restart).sorted(), forKey: Keys.idleRestart)
+        }
 
         if let stored = defaults.stringArray(forKey: Keys.windowQuitExcluded) {
             windowQuitExcluded = Set(stored)
@@ -81,8 +138,8 @@ final class AppSettings: ObservableObject {
     func migrateLegacyToggleIfNeeded(appName: String?, bundleId: String?) {
         guard let appName, let bundleId,
               let enabled = legacyTogglesByName.removeValue(forKey: appName) else { return }
-        if !enabled {
-            idleQuitExcluded.insert(bundleId)
+        if !enabled && idleAction(for: bundleId) == .quit {
+            setIdleAction(.off, for: bundleId)
         }
         persistLegacyToggles()
     }
